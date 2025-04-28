@@ -1,0 +1,19 @@
+{
+    "name": "dizatech/sadad_ipg",
+    "type": "library",
+    "require": {
+        "guzzlehttp/guzzle": "^7.9"
+    },
+    "license": "GPL-3.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "Dizatech\\SadadIpg\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Omid Reza Vasheghani Farahani",
+            "email": "omidrezav@gmail.com"
+        }
+    ]
+}
