@@ -1,0 +1,77 @@
+## Payment Cycle
+For a payment transaction we have to request a payment. If our request is successful the IPG will return a token with which we should guide the customer to the payment page via a GET request.
+As the payment gateway requires the request have a valid referer we should do the redirection through an HTML form submission.
+Customer will be redirected back to our desired URL(redirect address) from payment page via a POST request carrying data which may be used to check and verify the transaction.
+
+### Instantiating an IPG object
+for instantiating an IPG object we should call `Dizatech\SadadIpg\SadadIpg` constructor passing it an array of required arguments containing:
+* merchant_id: your payment gateway merchant id
+* terminal_id: your payment gateway terminal id
+* key: your payment gateway key
+#### Code sample:
+```php
+$args = [
+    'merchant_id'   => '123',
+    'terminal_id'   => '456',
+    'key'           => '789',
+]; //Replace arguments with your gateway actual values 
+$ipg = new Dizatech\SadadIpg\SadadIpg($args);
+```
+### Purchase Request
+For a payment transaction we should request a payment from IPG and acquire a token. This may be accomplished by calling `requestPayment` method. If the request is successful we can redirect our customer to the payment page with the acquired token.
+#### Arguments:
+* order_id: unique order id
+* amount: payment amount in Rials
+* redirect_url: URL to which customer may be redirected after payment
+#### Returns:
+An object with the following properties:
+* status: `success` or `error`
+* token: in case of a successful request contains a token with which we can redirect user to the payment page. This token may be used for further tracking the purchase request
+* message: in case of an error contains an message describing the error
+```php
+$result = $ipg->requestPayment(
+    order_id: 3,
+    amount: 13000,
+    redirect_url: 'http://myaddress.com/verify'
+);
+if ($result->status == 'success') {
+    echo "<form action='https://sadad.shaparak.ir/VPG/Purchase' id='sadad_redirect_form' style='display: none;'>
+        <input type='text' name='token' value='{$result->token}'>
+        <button type='submit'>Send</button>
+    </form>
+    <script>window.addEventListener('load', function () {document.getElementById('sadad_redirect_form').submit()})</script>";
+    exit;
+}
+```
+## Payment verification
+After payment the customer will be redirected back to the redirect address provided in payment request, via a POST request carrying all necessary data. Data fields sent by IPG are:
+* OrderId: order id passed to IPG when requesting a payment
+* ResCode: a code which determines transaction status
+* token: payment token (the same acquired when requesting a payment)
+If `ResCode` equals `0` and POST request contains a token  we can continue verifying the payment via calling the ipg `verify` method.
+#### Arguments:
+* token: payment token (returned via the POST request from IPG)
+#### Returns:
+* status: `success` or `error`
+* ref_no: in case of a successful request contains a payment reference number
+* message: in case of an error contains an message describing the error
+If `ResCode` equals `0` it means the transaction has been successful and verified. `ResCode = 100` means the transaction was successful but has already beeen verified. So in either case the transaction can be regarded as **successful**.
+Other values for `ResCode` means the transaction has failed.
+#### Code Sample:
+```php
+//Replace arguments with your gateway actual values 
+$ipg = new SadadIpg([
+    'merchant_id'   => '123',
+    'terminal_id'   => '456',
+    'key'           => '789',
+]);
+
+if (0 == $_REQUEST['ResCode'] && isset($_REQUEST['token'])) {
+    $result = $ipg->verify($_REQUEST['token']);
+    if ($result->status == 'success') {
+        echo "Transaction sucessful! Reference Number: {$result->ref_no}";
+    } else {
+        echo "Transaction failed with error: {$result->error}";
+    }
+}
+```
